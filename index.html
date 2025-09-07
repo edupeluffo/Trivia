@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🧠 Trivia Olfatorio — Cap. 2</title>
+<style>
+  :root { --bg:#0b132b; --card:#1c2541; --accent:#5bc0be; --ok:#2ecc71; --bad:#e74c3c; --text:#f5f7fa; }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial; background:var(--bg); color:var(--text)}
+  header{padding:22px 16px; text-align:center; background:linear-gradient(60deg,#1c2541,#3a506b); position:sticky; top:0; z-index:10}
+  h1{margin:0; font-size:clamp(20px,3.2vw,30px)}
+  .emoji-band{margin-top:8px; font-size:22px; letter-spacing:4px; opacity:.9}
+  main{max-width:900px; margin:24px auto; padding:16px}
+  .card{background:var(--card); border:1px solid #2e3c59; border-radius:18px; padding:20px; margin:16px 0; box-shadow:0 8px 30px rgba(0,0,0,.25); position:relative; overflow:hidden}
+  .ribbon{position:absolute; inset:auto -8px -8px auto; transform:rotate(-6deg); font-size:22px; opacity:.25}
+  .q-index{opacity:.85; font-size:14px}
+  .q-title{font-weight:800; margin:10px 0 14px; font-size:clamp(17px,2.5vw,22px)}
+  .choices{display:grid; gap:10px}
+  .choice{background:#243254; border:1px solid #2f3f66; border-radius:12px; padding:12px 14px; cursor:pointer; transition:.15s}
+  .choice:hover{transform:translateY(-1px); border-color:#3f5286}
+  .choice[disabled]{opacity:.75; cursor:not-allowed}
+  .feedback{margin-top:12px; font-weight:800}
+  .ok{color:var(--ok)}
+  .bad{color:var(--bad)}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; justify-content:space-between; align-items:center}
+  .left, .right{display:flex; gap:10px; align-items:center}
+  button{all:unset; padding:10px 14px; background:var(--accent); color:#05202b; border-radius:12px; font-weight:800; cursor:pointer}
+  button.secondary{background:#3a506b; color:var(--text)}
+  button[disabled]{opacity:.5; cursor:not-allowed}
+  .pill{display:inline-block; background:#3a506b; border-radius:999px; padding:4px 10px; font-size:12px; margin-left:6px}
+  .vf-grid{display:grid; grid-template-columns: 1fr auto auto; gap:8px; align-items:center; background:#243254; border:1px solid #2f3f66; border-radius:12px; padding:8px}
+  .vf-row{display:contents}
+  .vf-row span{padding:8px 6px}
+  .vf-row button{padding:8px 12px; border-radius:10px}
+  .progress{height:10px; background:#223055; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px #2f3f66}
+  .bar{height:100%; width:0%; background:linear-gradient(90deg, #5bc0be, #2ecc71)}
+  .celebrate{font-size:28px; margin:8px 0}
+  .center{text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 Trivia interactiva — I par craneal: Nervio Olfatorio <span class="pill">Capítulo 2</span></h1>
+  <div class="emoji-band">🧠🧬🧠🧬🧠🧬🧠🧬🧠</div>
+</header>
+<main>
+  <div class="card">
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div class="q-index" id="qIndex"></div>
+    <div class="q-title" id="qTitle"></div>
+    <div id="qBody"></div>
+    <div class="feedback" id="qFeedback"></div>
+    <div class="controls">
+      <div class="left">
+        <button class="secondary" id="showExplainBtn">💡 Ver explicación</button>
+        <span id="explain"></span>
+      </div>
+      <div class="right">
+        <button class="secondary" id="prevBtn">⟵ Anterior</button>
+        <button id="nextBtn">Siguiente ⟶</button>
+        <button id="finishBtn" style="display:none">Finalizar ✅</button>
+      </div>
+    </div>
+    <div class="ribbon">🧠🧠🧬🧠🧠</div>
+  </div>
+
+  <div id="result" class="card center" style="display:none">
+    <div class="celebrate" id="celebrate">🧠</div>
+    <h2 id="scoreTitle">Resultado</h2>
+    <p id="scoreDetail"></p>
+    <div style="margin-top:10px; display:flex; gap:10px; justify-content:center">
+      <button onclick="restart()">🔁 Reiniciar</button>
+      <button class="secondary" onclick="showAnswers()">📘 Mostrar todas las respuestas</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// --- Datos del cuestionario ---
+const quiz = [
+  {
+    type: "single",
+    question: "¿Dónde se encuentra la primera neurona de la vía olfatoria?",
+    choices: [
+      "Bulbo olfatorio",
+      "Estría olfatoria",
+      "Epitelio olfatorio",
+      "Tracto olfatorio"
+    ],
+    answer: 2, // Epitelio olfatorio
+    explain: "Los receptores olfatorios (neuronas bipolares) se ubican en el epitelio olfatorio de la cavidad nasal."
+  },
+  {
+    type: "vf",
+    question: "Marque verdadero o falso:",
+    statements: [
+      { text: "La vía olfatoria hacia la corteza olfatoria primaria es cruzada.", answer: false },
+      { text: "La vía olfatoria es una vía sensitiva que no realiza relevo en el tálamo.", answer: true },
+      { text: "Las fibras del nervio olfatorio son amielínicas.", answer: true },
+      { text: "La mayor parte de los axones del nervio olfatorio pasan a la estría olfatoria medial.", answer: false }
+    ],
+    explain: "La proyección es principalmente ipsilateral; es la única vía sensitiva que llega a corteza sin relevo talámico; las fibras olfatorias son amielínicas; el mayor flujo va por la estría lateral."
+  },
+  {
+    type: "single",
+    question: "¿Qué estructuras forman parte del área olfatoria primaria?",
+    choices: [
+      "Corteza entorrinal, uncus, límen de la ínsula, amígdala",
+      "Corteza entorrinal, corteza orbitofrontal, uncus, amígdala",
+      "Corteza entorrinal, uncus, hipotálamo, amígdala",
+      "Corteza entorrinal, uncus, hipocampo, amígdala"
+    ],
+    answer: 0,
+    explain: "El área olfatoria primaria incluye la corteza piriforme (en el uncus), corteza periamigdalina/ amígdala, corteza entorrinal y el tubérculo olfatorio cercano al límen de la ínsula."
+  },
+  {
+    type: "single",
+    question: "¿Cuál de las siguientes sustancias NO se aconseja utilizar para evaluar el olfato?",
+    choices: [
+      "Café",
+      "Ajo",
+      "Alcohol",
+      "Vainilla",
+      "Jabón"
+    ],
+    answer: 2,
+    explain: "El alcohol estimula fuertemente el trigémino; para olfacción se prefieren olores no irritantes (p. ej. café, vainilla, jabón)."
+  },
+  {
+    type: "single",
+    question: "¿Cómo se denomina la alteración del olfato cuando los olores son percibidos como pútridos o desagradables y realmente no existen?",
+    choices: [
+      "Hiperosmia",
+      "Cacosmia",
+      "Fantosmia",
+      "Disosmia",
+      "Hiposmia"
+    ],
+    answer: 1,
+    explain: "Cacosmia: percepción fétida/desagradable del olor, incluso sin estímulo real. (Fantosmia: percepción de olor inexistente, no necesariamente desagradable)."
+  },
+  {
+    type: "single",
+    question: "Dentro de las causas de alteración adquirida del olfato se encuentran:",
+    choices: [
+      "La holoprosencefalia",
+      "Las infecciones virales del epitelio nasal",
+      "El síndrome de Kallmann",
+      "El síndrome neocorticodegenerativo de Johnson"
+    ],
+    answer: 1,
+    explain: "Entre las causas adquiridas, las infecciones virales del epitelio nasal son frecuentes. Las opciones a), c) son congénitas; d) es distractor."
+  },
+  {
+    type: "single",
+    question: "El síndrome de Kallmann se caracteriza por, EXCEPTO:",
+    choices: [
+      "Herencia AD o AR",
+      "Hipogonadismo",
+      "Hiposmia o anosmia",
+      "Trastornos motores"
+    ],
+    answer: 3,
+    explain: "Kallmann: hipogonadismo hipogonadotrópico y anosmia/hiposmia; puede heredar AD/AR o ligada al X. No cursa con trastornos motores."
+  },
+  {
+    type: "single",
+    question: "Luego de un traumatismo de cráneo un adolescente refiere anosmia y rinorrea. Usted piensa:",
+    choices: [
+      "En una fractura de techo de órbita",
+      "En una fractura de base de órbita",
+      "Fractura de lámina cribosa",
+      "Fractura de peñasco"
+    ],
+    answer: 2,
+    explain: "La fractura de la lámina cribosa puede provocar sección de filetes olfatorios y rinorraquia (LCR)."
+  }
+];
+
+// Configuración de puntuación: 1 punto por pregunta acertada (en V/F hay que acertar TODAS).
+let current = 0;
+let score = 0;
+const answered = new Array(quiz.length).fill(false);
+const correctness = new Array(quiz.length).fill(false);
+
+const qIndex = document.getElementById('qIndex');
+const qTitle = document.getElementById('qTitle');
+const qBody  = document.getElementById('qBody');
+const qFeedback = document.getElementById('qFeedback');
+const explainBtn = document.getElementById('showExplainBtn');
+const explain = document.getElementById('explain');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const finishBtn = document.getElementById('finishBtn');
+const bar = document.getElementById('bar');
+
+explainBtn.addEventListener('click', () => {
+  const ex = quiz[current].explain || "";
+  if(explain.innerText) explain.innerText = "";
+  else explain.innerText = "💡 " + ex;
+});
+
+prevBtn.addEventListener('click', () => { if(current>0){ current--; render(); }});
+nextBtn.addEventListener('click', () => { if(current<quiz.length-1){ current++; render(); }});
+finishBtn.addEventListener('click', finalize);
+
+function render(){
+  const q = quiz[current];
+  // progreso
+  const pct = Math.round((current)/quiz.length*100);
+  bar.style.width = pct + "%";
+  // textos
+  qIndex.innerText = `Pregunta ${current+1} de ${quiz.length}`;
+  qTitle.innerText = q.question;
+  qBody.innerHTML = "";
+  qFeedback.innerHTML = "";
+  explain.innerText = "";
+  // botones de navegación
+  prevBtn.disabled = current===0;
+  nextBtn.style.display = current<quiz.length-1 ? "" : "none";
+  finishBtn.style.display = current===quiz.length-1 ? "" : "none";
+  // cuerpo según tipo
+  if(q.type === "single"){
+    const box = document.createElement('div'); box.className='choices';
+    q.choices.forEach((c, idx)=>{
+      const btn = document.createElement('button');
+      btn.className='choice'; btn.textContent=c;
+      btn.onclick = ()=>checkSingle(idx, btn, box);
+      if(answered[current]) btn.setAttribute('disabled','true');
+      if(answered[current] && idx===q.answer){
+        btn.style.borderColor = 'var(--ok)';
+      }
+      box.appendChild(btn);
+    });
+    qBody.appendChild(box);
+  } else if(q.type==="vf"){
+    const grid = document.createElement('div'); grid.className='vf-grid';
+    // Estado temporal por pregunta
+    const state = { picked: new Array(q.statements.length).fill(null) };
+    grid.dataset.state = JSON.stringify(state);
+    q.statements.forEach((s, j)=>{
+      const row = document.createElement('div'); row.className='vf-row';
+      const span = document.createElement('span'); span.textContent = (j+1)+") "+s.text;
+      const btV = document.createElement('button'); btV.className='secondary'; btV.textContent='Verdadero';
+      const btF = document.createElement('button'); btF.className='secondary'; btF.textContent='Falso';
+      btV.onclick = ()=>checkVF(j, true, btV, btF, grid);
+      btF.onclick = ()=>checkVF(j, false, btV, btF, grid);
+      if(answered[current]){ // bloquear e indicar correctas
+        btV.setAttribute('disabled','true'); btF.setAttribute('disabled','true');
+        if(s.answer===true) btV.style.border = '2px solid var(--ok)';
+        else btF.style.border = '2px solid var(--ok)';
+      }
+      row.appendChild(span); row.appendChild(btV); row.appendChild(btF);
+      grid.appendChild(row);
+    });
+    qBody.appendChild(grid);
+  }
+  // mostrar resultado si ya fue respondida
+  if(answered[current]){
+    qFeedback.innerHTML = correctness[current] ? "<span class='ok'>✔ Correcto</span>" : "<span class='bad'>✘ Incorrecto</span>";
+  }
+}
+
+function checkSingle(pickIndex, btn, box){
+  const q = quiz[current];
+  if(answered[current]) return;
+  // deshabilitar
+  [...box.children].forEach(b=>b.setAttribute('disabled','true'));
+  if(pickIndex === q.answer){
+    btn.style.background = 'rgba(46,204,113,.15)';
+    btn.style.borderColor = 'var(--ok)';
+    qFeedback.innerHTML = "<span class='ok'>✔ Correcto</span>";
+    correctness[current] = true;
+  }else{
+    btn.style.background = 'rgba(231,76,60,.15)';
+    btn.style.borderColor = 'var(--bad)';
+    box.children[q.answer].style.borderColor = 'var(--ok)';
+    qFeedback.innerHTML = "<span class='bad'>✘ Incorrecto</span>";
+    correctness[current] = false;
+  }
+  answered[current] = true;
+  updateScore();
+}
+
+function checkVF(stmtIndex, value, btV, btF, grid){
+  const q = quiz[current];
+  if(answered[current]) return;
+  // actualizar estado temporal
+  const state = JSON.parse(grid.dataset.state);
+  state.picked[stmtIndex] = value;
+  grid.dataset.state = JSON.stringify(state);
+  // feedback visual parcial
+  btV.style.opacity = value? "1":"0.9";
+  btF.style.opacity = value? "0.9":"1";
+  // cuando todas respondidas, corregimos
+  if(state.picked.every(v => v !== null)){
+    // bloquear
+    [...grid.querySelectorAll('button')].forEach(b=>b.setAttribute('disabled','true'));
+    // evaluar: correcto solo si todas coinciden
+    const allRight = q.statements.every((s, i)=> s.answer === state.picked[i]);
+    correctness[current] = allRight;
+    qFeedback.innerHTML = allRight ? "<span class='ok'>✔ Correcto</span>" : "<span class='bad'>✘ Incorrecto</span>";
+    // marcar correctas
+    q.statements.forEach((s, i)=>{
+      const rowBtns = grid.querySelectorAll('.vf-row')[i].querySelectorAll('button');
+      const btnV = rowBtns[0], btnF = rowBtns[1];
+      if(s.answer===true) btnV.style.border = '2px solid var(--ok)';
+      else btnF.style.border = '2px solid var(--ok)';
+      if(state.picked[i] !== s.answer){
+        (state.picked[i] ? btnV : btnF).style.border = '2px solid var(--bad)';
+      }
+    });
+    answered[current] = true;
+    updateScore();
+  }
+}
+
+function updateScore(){
+  // recalc simple
+  score = correctness.reduce((acc, v)=> acc + (v?1:0), 0);
+}
+
+function finalize(){
+  // completar progreso al 100
+  bar.style.width = "100%";
+  // calcular puntaje
+  updateScore();
+  const total = quiz.length;
+  const pct = Math.round(score/total*100);
+  const result = document.getElementById('result');
+  const scoreTitle = document.getElementById('scoreTitle');
+  const scoreDetail = document.getElementById('scoreDetail');
+  const celebrate = document.getElementById('celebrate');
+  // mensaje
+  let emoji = "🧠"; 
+  if(pct===100) emoji = "🧠✨";
+  else if(pct>=75) emoji = "🧠💪";
+  else if(pct>=50) emoji = "🧠🧬";
+  else emoji = "🧠🔁";
+  celebrate.textContent = emoji;
+  scoreTitle.innerText = `Puntaje final: ${score}/${total} (${pct}%)`;
+  scoreDetail.innerHTML = pct>=75 ? "¡Excelente! Manejás muy bien la vía olfatoria." :
+                        pct>=50 ? "Bien, pero hay detalles a reforzar." :
+                                  "Toca repasar. Probá de nuevo 😉";
+  result.style.display = "";
+  window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'});
+}
+
+function showAnswers(){
+  // Ir pregunta por pregunta y marcar como respondida correcta
+  for(let i=0;i<quiz.length;i++){
+    current = i; render();
+    // simular explicación abierta
+    document.getElementById('explain').innerText = "💡 " + (quiz[i].explain || "");
+  }
+  current = quiz.length-1; render();
+}
+
+function restart(){
+  current = 0;
+  score = 0;
+  for(let i=0;i<quiz.length;i++){ answered[i]=false; correctness[i]=false; }
+  document.getElementById('result').style.display = "none";
+  render();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+render();
+</script>
+</body>
+</html>
