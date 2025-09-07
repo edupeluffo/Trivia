@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🧠 Trivia — II par (Nervio óptico) con justificación</title>
+<style>
+  :root { --bg:#0b132b; --card:#1c2541; --accent:#5bc0be; --ok:#2ecc71; --bad:#e74c3c; --text:#f5f7fa; }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial; background:var(--bg); color:var(--text)}
+  header{padding:22px 16px; text-align:center; background:linear-gradient(60deg,#1c2541,#3a506b)}
+  h1{margin:0; font-size:clamp(20px,3.2vw,30px)}
+  main{max-width:900px; margin:24px auto; padding:16px}
+  .card{background:var(--card); border:1px solid #2e3c59; border-radius:18px; padding:20px; margin:16px 0; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .q-index{opacity:.85; font-size:14px}
+  .q-title{font-weight:800; margin:10px 0 14px; font-size:clamp(17px,2.5vw,22px)}
+  .choices{display:grid; gap:10px}
+  .choice{background:#243254; border:1px solid #2f3f66; border-radius:12px; padding:12px 14px; cursor:pointer; transition:.15s}
+  .choice:hover{transform:translateY(-1px); border-color:#3f5286}
+  .choice[disabled]{opacity:.75; cursor:not-allowed}
+  .feedback{margin-top:12px; font-weight:800}
+  .ok{color:var(--ok)}
+  .bad{color:var(--bad)}
+  .explain{margin-top:8px; padding:10px 12px; background:#203054; border:1px solid #2f3f66; border-radius:12px; font-size:15px}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; justify-content:space-between; align-items:center}
+  button{all:unset; padding:10px 14px; background:var(--accent); color:#05202b; border-radius:12px; font-weight:800; cursor:pointer}
+  button.secondary{background:#3a506b; color:var(--text)}
+  button[disabled]{opacity:.5; cursor:not-allowed}
+  .progress{height:10px; background:#223055; border-radius:999px; overflow:hidden; border:1px solid #2f3f66}
+  .bar{height:100%; width:0%; background:linear-gradient(90deg, #5bc0be, #2ecc71)}
+  .center{text-align:center}
+  .celebrate{font-size:28px; margin:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 Trivia — II par: Nervio óptico <span style="font-size:14px;opacity:.8">con justificación</span></h1>
+</header>
+
+<main>
+  <div class="card">
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div class="q-index" id="qIndex"></div>
+    <div class="q-title" id="qTitle"></div>
+    <div id="qBody"></div>
+    <div class="feedback" id="qFeedback"></div>
+    <div class="explain" id="qExplain" style="display:none"></div>
+    <div class="controls">
+      <button class="secondary" id="prevBtn">⟵ Anterior</button>
+      <div>
+        <button id="nextBtn">Siguiente ⟶</button>
+        <button id="finishBtn" style="display:none">Finalizar ✅</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result" class="card center" style="display:none">
+    <div class="celebrate" id="celebrate">🧠</div>
+    <h2 id="scoreTitle">Resultado</h2>
+    <p id="scoreDetail"></p>
+    <div style="margin-top:10px; display:flex; gap:10px; justify-content:center">
+      <button onclick="restart()">🔁 Reiniciar</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const quiz = [
+  {
+    q: "A nivel del quiasma óptico:",
+    choices: [
+      "Las fibras de la retina temporal se cruzan",
+      "Las fibras de la retina nasal se cruzan",
+      "Las fibras de la retina nasal permanecen sin cruzarse",
+      "Las fibras de la retina temporal y nasal se cruzan"
+    ],
+    a: 1,
+    exp: "En el quiasma se cruzan las fibras de la retina nasal; las temporales permanecen ipsilaterales."
+  },
+  {
+    q: "Las cintillas ópticas se encuentran conformadas por:",
+    choices: [
+      "Retina nasal contralateral y temporal ipsilateral",
+      "Retina nasal y temporal contralaterales",
+      "Retina nasal ipsilateral y temporal contralateral",
+      "Retina nasal y temporal ipsilaterales"
+    ],
+    a: 0,
+    exp: "Cada cintilla lleva fibras de la retina temporal ipsilateral y nasal contralateral (después del cruce quiasmático)."
+  },
+  {
+    q: "Las radiaciones ópticas alcanzan la corteza visual primaria, a excepción de atravesar:",
+    choices: ["Lóbulo frontal","Lóbulo parietal","Lóbulo temporal","Lóbulo occipital"],
+    a: 0,
+    exp: "Las radiaciones discurren por temporal (asa de Meyer) y parietal hacia el occipital; no pasan por el frontal."
+  },
+  {
+    q: "Con respecto a los conos, indique la correcta:",
+    choices: [
+      "Reaccionan ante la luz tenue",
+      "Se encuentran mayormente en la retina periférica",
+      "Son más abundantes que los bastones",
+      "Tienen bajo grado de convergencia en las células ganglionares"
+    ],
+    a: 3,
+    exp: "Los conos presentan baja convergencia (circuitería casi 1:1), clave para alta agudeza visual y visión fotópica."
+  },
+  {
+    q: "Organización retinotópica de la vía visual: marque la INCORRECTA",
+    choices: [
+      "Representación de la fóvea extensa en corteza visual",
+      "La fóvea se representa en la parte anterior de la corteza visual",
+      "El campo visual superior se representa en pared inferior de cisura calcarina",
+      "El campo visual inferior se representa en pared superior de la cisura"
+    ],
+    a: 1,
+    exp: "La fóvea se representa en el polo occipital (posterior), no en la parte anterior de la corteza visual primaria."
+  },
+  {
+    q: "El LCR se observa hiperintenso en, EXCEPTO:",
+    choices: ["STIR","T2","T2 alta resolución (DRIVE)","T1 fat sat"],
+    a: 3,
+    exp: "En T1 (con o sin supresión grasa) el LCR es hipointenso; es hiperintenso en T2 y secuencias afines."
+  },
+  {
+    q: "¿Desde qué diámetro del nervio óptico y su vaina se considera patológico?",
+    choices: ["3 mm","4 mm","5 mm","6 mm"],
+    a: 2,
+    exp: "Diámetros ≥5 mm del complejo nervio–vaina sugieren patología (p. ej., hipertensión intracraneal)."
+  },
+  {
+    q: "Causa más frecuente de pérdida de visión en pediatría:",
+    choices: ["Cataratas","Déficit de refracción","Neuritis óptica","Hipertensión endocraneana"],
+    a: 1,
+    exp: "Los errores de refracción son la causa más común y tratable de disminución visual en la infancia."
+  },
+  {
+    q: "Signo que NO encontrará en trastorno pregeniculado:",
+    choices: ["Visión anormal","Defecto campimétrico","Reflejo fotomotor anormal","Reflejo fotomotor normal"],
+    a: 3,
+    exp: "Las lesiones pregeniculadas suelen alterar el reflejo fotomotor; un reflejo normal no es esperable."
+  },
+  {
+    q: "El retraso de la maduración visual debe diferenciarse de:",
+    choices: ["Apraxia motora ocular","Retraso global del desarrollo y autismo","Hipoplasia del nervio óptico","Todas correctas"],
+    a: 3,
+    exp: "El diagnóstico diferencial incluye todas las anteriores: apraxia motora ocular, trastornos del desarrollo/autismo e hipoplasia del NO."
+  }
+];
+
+let i=0, score=0;
+const done = Array(quiz.length).fill(false);
+const ok   = Array(quiz.length).fill(false);
+
+const qIndex = document.getElementById('qIndex');
+const qTitle = document.getElementById('qTitle');
+const qBody  = document.getElementById('qBody');
+const qFeedback = document.getElementById('qFeedback');
+const qExplain  = document.getElementById('qExplain');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const finishBtn = document.getElementById('finishBtn');
+const bar = document.getElementById('bar');
+
+prevBtn.onclick = ()=>{ if(i>0){ i--; render(); }};
+nextBtn.onclick = ()=>{ if(i<quiz.length-1){ i++; render(); }};
+finishBtn.onclick = finalize;
+
+function render(){
+  const q = quiz[i];
+  bar.style.width = Math.round(i/quiz.length*100) + '%';
+  qIndex.textContent = `Pregunta ${i+1} de ${quiz.length}`;
+  qTitle.textContent = q.q;
+  qBody.innerHTML = '';
+  qFeedback.innerHTML = '';
+  qExplain.style.display = 'none';
+  qExplain.textContent = '';
+  prevBtn.disabled = i===0;
+  nextBtn.style.display = i<quiz.length-1 ? '' : 'none';
+  finishBtn.style.display = i===quiz.length-1 ? '' : 'none';
+
+  const box = document.createElement('div'); box.className='choices';
+  q.choices.forEach((c,idx)=>{
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.textContent = c;
+    b.onclick = ()=>select(idx,b,box);
+    if(done[i]) b.setAttribute('disabled','true');
+    if(done[i] && idx===q.a) b.style.borderColor = 'var(--ok)';
+    box.appendChild(b);
+  });
+  qBody.appendChild(box);
+
+  if(done[i]){
+    qFeedback.innerHTML = ok[i] ? "<span class='ok'>✔ Correcto</span>" : "<span class='bad'>✘ Incorrecto</span>";
+    qExplain.style.display = 'block';
+    qExplain.textContent = "💡 " + q.exp;
+  }
+}
+
+function select(picked, btn, box){
+  if(done[i]) return;
+  [...box.children].forEach(x=>x.setAttribute('disabled','true'));
+
+  if(picked === quiz[i].a){
+    btn.style.background='rgba(46,204,113,.15)';
+    btn.style.borderColor='var(--ok)';
+    qFeedback.innerHTML="<span class='ok'>✔ Correcto</span>";
+    ok[i]=true;
+  }else{
+    btn.style.background='rgba(231,76,60,.15)';
+    btn.style.borderColor='var(--bad)';
+    box.children[quiz[i].a].style.borderColor='var(--ok)';
+    qFeedback.innerHTML="<span class='bad'>✘ Incorrecto</span>";
+    ok[i]=false;
+  }
+  done[i]=true;
+  score = ok.reduce((a,v)=>a+(v?1:0),0);
+
+  // Mostrar justificación
+  qExplain.style.display = 'block';
+  qExplain.textContent = "💡 " + quiz[i].exp;
+}
+
+function finalize(){
+  bar.style.width='100%';
+  const total = quiz.length;
+  const pct = Math.round(score/total*100);
+  const result = document.getElementById('result');
+  const scoreTitle = document.getElementById('scoreTitle');
+  const scoreDetail = document.getElementById('scoreDetail');
+  const celebrate = document.getElementById('celebrate');
+  celebrate.textContent = pct===100?'🧠✨':pct>=75?'🧠💪':pct>=50?'🧠🧬':'🧠🔁';
+  scoreTitle.textContent = `Puntaje final: ${score}/${total} (${pct}%)`;
+  scoreDetail.textContent = pct>=75 ? "¡Excelente!" : pct>=50 ? "Bien, a reforzar algunos puntos." : "A repasar. ¡Probá otra vez!";
+  result.style.display = '';
+  window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+}
+
+function restart(){
+  i=0; score=0;
+  for(let k=0;k<quiz.length;k++){ done[k]=false; ok[k]=false; }
+  document.getElementById('result').style.display = 'none';
+  render(); window.scrollTo({top:0, behavior:'smooth'});
+}
+
+render();
+</script>
+</body>
+</html>
